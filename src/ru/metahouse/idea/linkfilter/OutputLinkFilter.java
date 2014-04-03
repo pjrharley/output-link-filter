@@ -15,7 +15,7 @@ public class OutputLinkFilter
         implements Filter {
 
     private static final Pattern FILE_PATTERN = Pattern.compile(
-            "(/[a-zA-Z0-9/\\-_\\.]+\\.[a-z]+)(:(\\d+))?(:(\\d+))?");
+            "(/?[a-zA-Z0-9/\\-_\\.]+\\.[a-zp]+)(:(\\d+))?(:(\\d+))?");
 
     private static final Pattern URL_PATTERN = Pattern.compile(
             "(https?://[-_.!~*\\\\'()a-zA-Z0-9;\\\\/?:\\\\@&=+\\\\$,%#]+)");
@@ -37,7 +37,16 @@ public class OutputLinkFilter
             matcher = FILE_PATTERN.matcher(s);
 
             if (matcher.find()) {
-                VirtualFile file = project.getBaseDir().getFileSystem().findFileByPath(matcher.group(1));
+                VirtualFile baseDir = project.getBaseDir();
+
+                String pathMatched = matcher.group(1);
+                VirtualFile file;
+                if (pathMatched.startsWith("/")) {
+                    file = baseDir.getFileSy-stem().findFileByPath(pathMatched);
+                } else {
+                    file = baseDir.findFileByRelativePath(pathMatched);
+                }
+
                 if (file != null) {
 
                     OpenFileDescriptor fileDescriptor = new OpenFileDescriptor(project,
