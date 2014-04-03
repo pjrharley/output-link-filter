@@ -3,6 +3,7 @@ package ru.metahouse.idea.linkfilter;
 import com.intellij.execution.filters.Filter;
 import com.intellij.execution.filters.OpenFileHyperlinkInfo;
 import com.intellij.ide.browsers.OpenUrlHyperlinkInfo;
+import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.editor.markup.TextAttributes;
 import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
@@ -21,6 +22,8 @@ public class OutputLinkFilter
             "(https?://[-_.!~*\\\\'()a-zA-Z0-9;\\\\/?:\\\\@&=+\\\\$,%#]+)");
     private final Project project;
 
+    private static final Logger log = Logger.getInstance(OutputLinkFilter.class);
+
     public OutputLinkFilter(Project project) {
         this.project = project;
     }
@@ -30,20 +33,23 @@ public class OutputLinkFilter
         int startPoint = endPoint - s.length();
         Matcher matcher = URL_PATTERN.matcher(s);
         if (matcher.find()) {
-
+            log.info("Matched URL in output: " + matcher.group(1));
             return new Result(startPoint + matcher.start(),
                     startPoint + matcher.end(), new OpenUrlHyperlinkInfo(matcher.group(1)));
         } else {
             matcher = FILE_PATTERN.matcher(s);
 
             if (matcher.find()) {
+                log.info("Matched file path in output: " + matcher.group(1));
                 VirtualFile baseDir = project.getBaseDir();
 
                 String pathMatched = matcher.group(1);
                 VirtualFile file;
                 if (pathMatched.startsWith("/")) {
+                    log.info("Absolute path");
                     file = baseDir.getFileSy-stem().findFileByPath(pathMatched);
                 } else {
+                    log.info("Relative path");
                     file = baseDir.findFileByRelativePath(pathMatched);
                 }
 
@@ -57,6 +63,9 @@ public class OutputLinkFilter
 
                     return new Result(startPoint + matcher.start(),
                             startPoint + matcher.end(), new OpenFileHyperlinkInfo(fileDescriptor));
+                }
+                else {
+                    log.warn("Did not find file: " + pathMatched);
                 }
             }
         }
